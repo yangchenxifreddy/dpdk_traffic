@@ -1,0 +1,91 @@
+#PRJ_DIR = /Northern/rootfs/patientMonitor
+PRJ_DIR = ..
+HDR_DIR  =  -I /usr/local/include -I /usr/include/ -I ./include/ -I ../00_virtualsystem/include -I ../06_config/include
+LIBFLAGS  =  -L /Northern/rootfs/rootfs/lib -lpthread
+FLAGS  =  -Wall    
+
+SRCDIRS   =   -I ./src
+PROGRAM   =  libcommon.so
+#PROGRAM   =  libcommon.a
+   
+SRCEXTS = .cpp .cxx .c++ .c
+HDREXTS = .h  
+
+CFLAGS  = -g -O2  
+CXXFLAGS= -g -O2  
+CXX    = arm-linux-g++  
+CC     = arm-linux-gcc
+AR     = arm-linux-ar
+  
+  
+SPACE   = $(EMPTY) $(EMPTY)  
+ifeq ($(PROGRAM),)  
+	CUR_PATH_NAMES = $(subst /,$(SPACE),$(subst $(SPACE),_,$(CURDIR)))  
+PROGRAM = $(word $(words $(CUR_PATH_NAMES)),$(CUR_PATH_NAMES))  
+	ifeq ($(PROGRAM),)  
+	PROGRAM = a.out  
+	endif  
+endif  
+
+ifeq ($(SRCDIRS),)  
+	SRCDIRS = .  
+endif  
+SOURCES = $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(SRCEXTS))))   
+HEADERS = $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(HDREXTS))))  
+SRC_CXX = $(filter-out %.c,$(SOURCES))  
+SRC_C = $(filter-out %.cpp %.cxx %.c++,$(SOURCES))
+OBJS    = $(addsuffix .o, $(basename $(SOURCES)))
+OBJS_C  = $(addsuffix .o, $(basename $(SRC_C))) 
+OBJS_CXX  = $(addsuffix .o, $(basename $(SRC_CXX))) 
+DEPS    = $(OBJS:.o=.d)  
+  
+DEPEND    = $(subst -g ,,$(DEPEND))  
+C_COMPILE = $(CC) $(HDR_PATH) $(CFLAGS) $(FLAGS) -c  
+CXX_COMPILE = $(CXX) $(HDR_DIR) $(CXXFLAGS) $(FLAGS) -c 
+LINK.c      = $(CC)  $(HDR_DIR) $(CFLAGS)   $(FLAGS) 
+LINK.cxx    = $(CXX) $(HDR_DIR) $(CXXFLAGS) $(FLAGS)  
+
+
+		
+.PHONY: all objs tags ctags clean distclean help show  
+  
+# Delete the default suffixes  
+.SUFFIXES:    
+all: $(PROGRAM) 
+%.d:%.cpp
+	@$(DEPEND) $< >> $@  
+%.d:%.c
+	@$(DEPEND) $< >> $@  
+  
+# Rules for generating object files (.o).  
+#----------------------------------------  
+objs:$(OBJS)  
+%.o:%.cpp  
+	$(CXX_COMPILE) $< -o $@  
+%.o:%.c
+	$(C_COMPILE) $< -o $@
+
+# Rules for generating the tags.  
+#-------------------------------------  
+tags: $(HEADERS) $(SOURCES)  
+	$(ETAGS) $(ETAGSFLAGS) $(HEADERS) $(SOURCES)  
+  
+ctags: $(HEADERS) $(SOURCES)  
+	$(CTAGS) $(CTAGSFLAGS) $(HEADERS) $(SOURCES)  
+  
+# Rules for generating the executable.  
+#-------------------------------------  
+$(PROGRAM):$(OBJS)  
+ifeq ($(SRC_CXX),)              # C program  
+	$(LINK.c) $(OBJS) $(LIBFLAGS) -o $@  
+else                            # C++ program  
+	$(LINK.cxx) -shared $(OBJS)    $(LIBFLAGS) -o $@  
+#	$(AR) cq $@ $^
+endif  
+
+clean:  
+	$(RM) $(OBJS) $(PROGRAM)  
+	 
+  
+distclean: clean  
+	$(RM) $(DEPS) TAGS  

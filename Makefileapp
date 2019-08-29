@@ -1,0 +1,121 @@
+HDR_OHTER = ../res -I ../libsrc/00_virtualsystem/include -I  ../libsrc/01_common/include -I ../libsrc/02_guilib/include -I  ../libsrc/03_parammodule/include -I ../libsrc/04_datamanage/include -I ../libsrc/05_alarm/include -I ../libsrc/06_config/include -I ../libsrc/07_inputmodule/include -I ../libsrc/08_storage/include -I ../libsrc/09_patientmanage/include -I ./src/wnd/param_font -I
+HDR_DIR  =  -I /usr/local/include -I /usr/include -I  ./include -I ./src/common/include  -I  $(HDR_OHTER) 
+
+
+PRJ_DIR = ..
+LIB0 = -L $(PRJ_DIR)/libsrc/00_virtualsystem/ -lvirtualsystem 
+LIB1 = -L $(PRJ_DIR)/libsrc/01_common/ -lcommon 
+LIB2 = -L $(PRJ_DIR)/libsrc/02_guilib/ -lntgui
+LIB3 = -L $(PRJ_DIR)/libsrc/03_parammodule/ -lparammode
+LIB4 = -L $(PRJ_DIR)/libsrc/04_datamanage/ -ldatamanage
+LIB5 = -L $(PRJ_DIR)/libsrc/05_alarm/ -lalarm
+LIB6 = -L $(PRJ_DIR)/libsrc/06_config/ -lconfigmodule
+LIB7 = -L $(PRJ_DIR)/libsrc/07_inputmodule/ -linputmodule
+LIB8 = -L $(PRJ_DIR)/libsrc/08_storage/ -lstorage
+LIB9 = -L $(PRJ_DIR)/libsrc/09_patientmanage/ -lpatientmanage
+
+LIBFLAGS   =  -L /Northern/rootfs/rootfs/lib -lpthread  -lasound -lsqlite3 $(LIB0) $(LIB1) $(LIB2) $(LIB3) $(LIB4) $(LIB5) $(LIB6) $(LIB7) $(LIB8) $(LIB9)
+#LIBFLAGS   =  -L /Northern/rootfs/rootfs/lib -lpthread
+FLAGS  = -Wall    
+
+#-I ./src/config/aries
+SRC_CONFIG = -I ./src/config 
+SRC_FACTORY = -I ./src/factory 
+SRC_LAYOUT = -I ./src/layout
+SRC_MISC = -I ./src/misc
+SRC_SCREEN = -I ./src/screen 
+SRC_WND = -I ./src/wnd  -I ./src/wnd/curinfo  -I ./src/wnd/gasbottle  -I ./src/wnd/left_region  -I ./src/wnd/modeset  -I ./src/wnd/param_font  -I ./src/wnd/param_wave  -I ./src/wnd/patient  -I ./src/wnd/pvfv  -I ./src/wnd/standby -I ./src/wnd/standby/maintain  -I ./src/wnd/system_check
+SRC_MENU1 = ./src/menu/spo2 -I
+SRC_MENU2 = ./src/menu/ag -I
+SRC_MENU3 = ./src/menu/freeze -I
+SRC_MENU4 = ./src/menu/alarmset -I ./src/menu/alarmset/agalarmset -I ./src/menu/alarmset/agalarmset/aaalarmset -I
+SRC_MENU5 = ./src/menu/mainmenu  -I ./src/menu/maintain -I ./src/menu/maintain/diagnosis -I
+SRC_MENU6 = ./src/menu/mainmenu/monitorinfo -I
+SRC_MENU7 = ./src/menu/mainmenu/usermaintenance -I
+SRC_MENU8 = ./src/menu/mainmenu/data -I
+SRC_MENU9 = ./src/menu/mainmenu/sensor_parameter -I
+SRC_MENU10= ./src/menu/mainmenu/system_setup -I
+SRC_MENU11= ./src/menu/patientset -I
+
+SRC_MENU  = $(SRC_MENU1) $(SRC_MENU2) $(SRC_MENU3) $(SRC_MENU4) $(SRC_MENU5) $(SRC_MENU6) $(SRC_MENU7) $(SRC_MENU8) $(SRC_MENU9) $(SRC_MENU10) $(SRC_MENU11)
+
+SRCDIRS   =   -I ./src  $(SRC_CONFIG) $(SRC_FACTORY) $(SRC_LAYOUT) $(SRC_MISC) $(SRC_SCREEN) $(SRC_WND) $(SRC_MENU)
+PROGRAM   =  appmain
+
+SRCEXTS = .cpp .c
+HDREXTS = .h  
+
+CFLAGS  = -g -O2  
+CXXFLAGS= -g -O2  
+CXX    = arm-linux-g++  
+CC     = arm-linux-gcc 
+AR	   = arm-linux-ar
+  
+  
+SPACE   = $(EMPTY) $(EMPTY)  
+ifeq ($(PROGRAM),)  
+	CUR_PATH_NAMES = $(subst /,$(SPACE),$(subst $(SPACE),_,$(CURDIR)))  
+PROGRAM = $(word $(words $(CUR_PATH_NAMES)),$(CUR_PATH_NAMES))  
+	ifeq ($(PROGRAM),)  
+	PROGRAM = a.out  
+	endif  
+endif  
+
+ifeq ($(SRCDIRS),)  
+	SRCDIRS = .  
+endif  
+SOURCES = $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(SRCEXTS))))   
+HEADERS = $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(HDREXTS))))  
+SRC_CXX = $(filter-out %.c,$(SOURCES))  
+SRC_C = $(filter-out %.cpp %.cxx %.c++,$(SOURCES))
+OBJS    = $(addsuffix .o, $(basename $(SOURCES)))
+OBJS_C  = $(addsuffix .o, $(basename $(SRC_C))) 
+OBJS_CXX  = $(addsuffix .o, $(basename $(SRC_CXX))) 
+DEPS    = $(OBJS:.o=.d)  
+  
+DEPEND    = $(subst -g ,,$(DEPEND))  
+C_COMPILE = $(CC) $(HDR_PATH) $(CFLAGS) $(FLAGS) -c  
+CXX_COMPILE = $(CXX) $(HDR_DIR) $(CXXFLAGS) $(FLAGS) -c 
+LINK.c      = $(CC)  $(HDR_DIR) $(CFLAGS)   $(FLAGS) 
+LINK.cxx    = $(CXX) $(HDR_DIR) $(CXXFLAGS) $(FLAGS)  
+  
+.PHONY: all objs tags ctags clean distclean help show  
+  
+# Delete the default suffixes  
+.SUFFIXES:    
+all: $(PROGRAM) 
+%.d:%.cpp
+	@$(DEPEND) $< >> $@  
+%.d:%.c
+	@$(DEPEND) $< >> $@  	
+  
+# Rules for generating object files (.o).  
+#----------------------------------------  
+objs:$(OBJS)  
+%.o:%.cpp  
+	$(CXX_COMPILE) $< -o $@  
+%.o:%.c  
+	$(C_COMPILE) $< -o $@  
+  
+# Rules for generating the tags.  
+#-------------------------------------  
+tags: $(HEADERS) $(SOURCES)  
+	$(ETAGS) $(ETAGSFLAGS) $(HEADERS) $(SOURCES)  
+  
+ctags: $(HEADERS) $(SOURCES)  
+	$(CTAGS) $(CTAGSFLAGS) $(HEADERS) $(SOURCES)  
+  
+# Rules for generating the executable.  
+#-------------------------------------  
+$(PROGRAM):$(OBJS)  
+ifeq ($(SRC_CXX),)              # C program  
+	$(LINK.c)   $(OBJS) $(LIBFLAGS) -o $@  
+else                            # C++ program  
+	$(LINK.cxx) $(OBJS)    $(LIBFLAGS) -o $@  
+#	$(AR) cq $@ $^
+endif  
+clean:  
+	$(RM) $(OBJS) $(PROGRAM)  
+  
+distclean: clean  
+	$(RM) $(DEPS) TAGS  
