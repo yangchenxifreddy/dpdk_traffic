@@ -1,12 +1,15 @@
 #pragma once
 
+#include <chrono>
+#include <iostream>
 #include "Common.h"
 
 #include "PacketUtils.h"
-#include "DpdkDevice.h"
+#include "DpdkDevice.h"		
 #include "DpdkDeviceList.h"
 #include "PcapFileDevice.h"
 
+using namespace std;
 using namespace pcpp;
 
 /**
@@ -36,6 +39,7 @@ public:
 
 	bool run(uint32_t coreId)
 	{
+		pcpp::PcapFileWriterDevice* pcapWriter = NULL;
 		m_CoreId = coreId;
 		m_Stop = false;
 		DpdkDevice* rxDevice = m_WorkerConfig.RxDevice;
@@ -46,10 +50,18 @@ public:
 		{
 			return true;
 		}
+		
 
-		#define MAX_RECEIVE_BURST 64
+		std::string PathToWritePackets="rec.pcap";
+		pcapWriter = new pcpp::PcapFileWriterDevice(PathToWritePackets.c_str());
+		if (!pcapWriter->open())
+		{
+			EXIT_WITH_ERROR("Couldn't open pcap writer device");
+		}
+		
+		#define MAX_RECEIVE_BURST 1024
 		MBufRawPacket* packetArr[MAX_RECEIVE_BURST] = {};
-
+		long totalcount= 0;
 		// main loop, runs until be told to stop
 		while (!m_Stop)
 		{
@@ -62,6 +74,23 @@ public:
 				{
 					// send packets to TX port
 					txDevice->sendPackets(packetArr, packetsReceived, 0);
+					printf("%d \n",packetsReceived);
+
+					std::chrono::time_point<std::chrono::steady_clock> start , end ;
+					std::chrono::duration<double,std::milli> elapsed_milliseconds ;
+					start = std::chrono::steady_clock::now();
+
+					if (pcapWriter != NULL)
+					{
+						for (int tmpi = 0; tmpi < packetsReceived;tmpi++)
+							pcapWriter->writePacket(*packetArr[tmpi]);
+					}
+
+					end = std::chrono::steady_clock::now();
+					elapsed_milliseconds = end - start ;
+					totalcount+= packetsReceived;
+					printf("%ld  %lf ns\n",totalcount,elapsed_milliseconds.count());
+					
 				}
 			}
 		}
